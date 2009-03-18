@@ -1,0 +1,1 @@
+require 'acts_as_bucket_on/acts_as_bucket_on'
