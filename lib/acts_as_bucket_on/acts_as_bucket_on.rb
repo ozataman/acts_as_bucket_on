@@ -14,7 +14,7 @@ module ActiveRecord
         def acts_as_bucket_on(name, bucket = {})
           bucket.assert_valid_keys([:conditions])
           
-          condition_code = build_condition(bucket.delete(:conditions))
+          condition_code = build_bucketing_condition(bucket.delete(:conditions))
           bucket_name = name.to_s
           
           if bucket_name.blank?
@@ -42,11 +42,15 @@ module ActiveRecord
         
         private
         
-        def build_condition(condition)
-          if condition.is_a?(String)
+        # Build the qualities that bucketing will be based on
+        # Accepts String, Symbol and Array objects
+        def build_bucketing_condition(condition)
+          if condition.is_a?(String) 
             condition
+          elsif condition.is_a?(Symbol)
+            "send(:#{condition.to_s})"
           elsif condition.is_a?(Array)
-            str = condition.map {|c| "send(:#{c}).to_s" }.join(" + ")
+            str = condition.map {|c| build_bucketing_condition(c) }.join(" + ")
           else
             raise InvalidConditions, "invalid condition given to acts_as_bucket_on"
           end
