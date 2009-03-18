@@ -1,13 +1,32 @@
 ActsAsBucketOn
 ==============
 
-Introduction goes here.
+This is a plugin created out of practical necessity to form groupings, a.k.a. buckets, from the results of a query.
 
+The plugin currently has only minimal functionality, but it works. I plan to add and expand on the idea, as this is
+much needed functionality in many applications.
+
+Please feel free to suggest ideas, provide feedback or complain at:
+
+ozataman-at-gmail.com
 
 Example
 =======
 
-Example goes here.
+class Task < ActiveRecord::Base
+	acts_as_bucket_on :horizon, :conditions => "self.due_at.strftime('%y%m%d')"
+end
 
+@tasks = Task.all
+@buckets = Task.bucket_by_horizon(@tasks) # => {'20090305' => [<Task>,<Task>,...], '20090306' => [...]}
+	
+Now you can easily list tasks from each day separately in your views without having to apply any further processing on them:
 
-Copyright (c) 2009 [name of plugin creator], released under the MIT license
+<% @buckets.keys.each do |key| %>
+<h1>Tasks due <%= @buckets[key].first.due_at %></h1>
+.
+.
+.
+<% end %>
+
+Copyright (c) 2009 [Ozgun Ataman], released under the MIT license
