@@ -11,38 +11,47 @@ module ActiveRecord
         class InvalidObjectArray < StandardError; end
         class InvalidObject < StandardError; end
         
-        def acts_as_bucket_on(name, bucket = {})
-          bucket.assert_valid_keys([:conditions, :bucket_order])
+        # Dynamic bucketing function
+        def bucket(collection, params = {})
+          params.assert_valid_keys([:conditions, :bucket_order])
+          raise InvalidObjectArray, "Bucket input must be an array of ActiveRecord::Base objects" unless collection.is_a?(Array)
           
-          condition_code = build_bucketing_condition(bucket.delete(:conditions))
-          bucket_ordering_code = build_bucket_ordering(bucket.delete(:bucket_order))
+          condition_code = build_bucketing_condition(params.delete(:conditions))
+          bucket_ordering_code = build_bucket_ordering(params.delete(:bucket_order))
+          
+          buckets = {}
+          collection.each do |obj|
+            unless obj.class.base_class && obj.class.base_class.descends_from_active_record?
+              raise InvalidObject, "only ActiveRecord::Base descendants are allowed" 
+            end                  
+              
+            key = obj.instance_eval(condition_code).to_s || 'nil'
+            buckets[key] ||= []
+            buckets[key] << obj
+          end
+          
+          # return ordered bucket keys and the buckets Hash
+          [buckets.instance_eval(bucket_ordering_code), buckets]        
+        end
+        
+        def acts_as_bucket_on(name, params = {})      
           bucket_name = name.to_s
           
           if bucket_name.blank?
             raise InvalidBucketName, "bucket name #{bucket_name} is not valid."
           end
           
-          self.class_eval <<-HERE
-            def self.bucket_on_#{name}(objects)
-              raise InvalidObjectArray, "Bucket input must be an array of ActiveRecord::Base objects" unless objects.is_a?(Array)
-            
-              buckets = {}
-              objects.each do |obj|
-                unless obj.class.base_class && obj.class.base_class.descends_from_active_record?
-                  raise InvalidObject, "only ActiveRecord::Base descendants are allowed" 
-                end                  
-                  
-                key = obj.instance_eval(%q(#{condition_code})).to_s || 'nil'
-                buckets[key] ||= []
-                buckets[key] << obj
-              end
-              
-              # return ordered bucket keys and the buckets Hash
-              [buckets.instance_eval(%q(#{bucket_ordering_code})), buckets]
-            end
-                      
-          HERE
+          # save the given parameters to a class bucket parameters store
+          write_inheritable_hash(:bucket_parameters, {bucket_name => params})
           
+          # define a method that will call the dynamic bucketer with 
+          # the previously saved bucketing parameters
+          self.class_eval <<-HERE 
+            def self.bucket_on_#{bucket_name}(collection)
+              bucket(collection, read_inheritable_attribute(:bucket_parameters)['#{bucket_name}'])
+            end
+          HERE
+                    
         end
         
         private
