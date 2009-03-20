@@ -32,7 +32,8 @@ module ActiveRecord
                 end                  
                   
                 key = obj.instance_eval(%q(#{condition_code})).to_s || 'nil'
-                buckets[key] = obj
+                buckets[key] ||= []
+                buckets[key] << obj
               end
               buckets
             end
