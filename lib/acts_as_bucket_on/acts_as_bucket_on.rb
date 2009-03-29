@@ -16,8 +16,8 @@ module ActiveRecord
           params.assert_valid_keys([:conditions, :bucket_order])
           raise InvalidObjectArray, "Bucket input must be an array of ActiveRecord::Base objects" unless collection.is_a?(Array)
           
-          condition_code = build_bucketing_condition(params.delete(:conditions))
-          bucket_ordering_code = build_bucket_ordering(params.delete(:bucket_order))
+          condition_code = build_bucketing_condition(params[:conditions])
+          bucket_ordering_code = build_bucket_ordering(params[:bucket_order])
           
           buckets = {}
           collection.each do |obj|
