@@ -74,7 +74,7 @@ module ActiveRecord
           elsif condition.is_a?(Symbol)
             "send(:#{condition.to_s})"
           elsif condition.is_a?(Array)
-            str = condition.map {|c| build_bucketing_condition(c) }.join(" + ")
+            str = condition.map {|c| build_bucketing_condition(c) }.join(" && ")
           else
             raise InvalidConditions, "invalid condition given to acts_as_bucket_on"
           end
