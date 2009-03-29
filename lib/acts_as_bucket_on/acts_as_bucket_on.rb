@@ -25,7 +25,7 @@ module ActiveRecord
               raise InvalidObject, "only ActiveRecord::Base descendants are allowed" 
             end                  
               
-            key = obj.instance_eval(condition_code).to_s || 'nil'
+            key = obj.instance_eval(condition_code).try(:to_s) || 'nil'
             buckets[key] ||= []
             buckets[key] << obj
           end
