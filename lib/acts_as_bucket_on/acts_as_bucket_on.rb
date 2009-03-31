@@ -13,7 +13,7 @@ module ActiveRecord
         
         # Dynamic bucketing function
         def bucket(collection, params = {})
-          params.assert_valid_keys([:conditions, :bucket_order])
+          params.assert_valid_keys([:conditions, :bucket_order, :num_buckets, :bucket_limit, :include_other])
           raise InvalidObjectArray, "Bucket input must be an array of ActiveRecord::Base objects" unless collection.is_a?(Array)
           
           condition_code = build_bucketing_condition(params[:conditions])
@@ -80,8 +80,11 @@ module ActiveRecord
           end
         end
         
-        # Once the buckets are generated, order the buckets and return that as an Array
-        # Once ported to Ruby 1.9, we can simply return an ordered Hash
+        # Once the buckets are generated, the string defined here will be evaluated against
+        # the buckets hash.
+        # Once evaluated, the ordering function should 
+        # return the sorted bucket keys as an Array.
+        # Once ported to Ruby 1.9, we can simply return an ordered Hash.
         def build_bucket_ordering(ordering)
           if ordering.nil?
             "keys"
