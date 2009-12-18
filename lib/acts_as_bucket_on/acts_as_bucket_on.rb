@@ -13,8 +13,8 @@ module ActiveRecord
         
         # Dynamic bucketing function
         def bucket(collection, params = {})
-          params.assert_valid_keys([:conditions, :bucket_order, :num_buckets, :bucket_limit, :include_other])
-          raise InvalidObjectArray, "Bucket input must be an array of ActiveRecord::Base objects" unless collection.is_a?(Array)
+          params.assert_valid_keys([:conditions, :bucket_order, :max_buckets, :bucket_limit, :include_other])
+          raise InvalidObjectArray, "Input must respond to each (Enumerable)" unless collection.respond_to?(:each)
           
           condition_code = build_bucketing_condition(params[:conditions])
           bucket_ordering_code = build_bucket_ordering(params[:bucket_order])
