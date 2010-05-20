@@ -20,26 +20,33 @@ module ActiveRecord
           bucket_ordering_code = build_bucket_ordering(params[:bucket_order])
           
           buckets = {}
+          human_key_mappings = {}
           collection.each do |obj|
-            unless obj.class.base_class && obj.class.base_class.descends_from_active_record?
+            unless obj.class.respond_to?(:base_class) && obj.class.base_class.descends_from_active_record?
               raise InvalidObject, "only ActiveRecord::Base descendants are allowed" 
             end                  
               
             begin
-              key = obj.instance_eval(condition_code).try(:to_s) || 'nil'
+              key, human_key = obj.instance_eval(condition_code) || ['nil', 'nil']
               
             # if the given eval code raises an error for any reason
             # put the record in the unprocessed 'nil' bucket
             rescue
-              key = 'nil'
+              key, human_key = ['nil', 'nil']
             end
             
+            human_key_mappings[key] = human_key
+            
             buckets[key] ||= []
+            
             buckets[key] << obj
           end
           
+          # order the keys and make sure each ordered key is actually present in the resulting dataset
+          ordered_keys = buckets.instance_eval(bucket_ordering_code).map {|ok| human_key_mappings.keys.include?(ok) ? ok : nil}.compact
+                    
           # return ordered bucket keys and the buckets Hash
-          [buckets.instance_eval(bucket_ordering_code), buckets]        
+          [ordered_keys, human_key_mappings, buckets]        
         end
         
         def acts_as_bucket_on(name, params = {})      
